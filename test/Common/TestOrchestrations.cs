@@ -797,5 +797,73 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var result = await ctx.CallActorAsync<List<KeyValuePair<DateTime, string>>>(actor, "Get");
         }
+
+        public static async Task<string> BasicObjects([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var chatroom = ctx.GetInput<ActorId>();
+
+            // signals
+            ctx.SignalActor<TestActorClasses.IChatRoom>(chatroom, a => a.Post("a"));
+            ctx.SignalActor<TestActorClasses.IChatRoom>(chatroom, a => a.Post("b"));
+
+            // call returning a task, but no result
+            await ctx.CallActorAsync<TestActorClasses.IChatRoom>(chatroom, a => a.Post("c"));
+
+            // calls returning a result
+            var result = await ctx.CallActorAsync(chatroom, (TestActorClasses.IChatRoom a) => a.Get());
+
+            if (string.Join(',', result.Select(kvp => kvp.Value)) != "a,b,c")
+            {
+                return "incorrect result1";
+            }
+
+            return "ok";
+        }
+
+        public static async Task<string> ProxyTest([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            var proxytest = ctx.GetInput<ActorId>();
+
+            var complexObject = new SortedDictionary<DateTime, TestActorClasses.UserDefinedClass>()
+                {
+                    { ctx.CurrentUtcDateTime, new TestActorClasses.UserDefinedClass() { A = 333 } },
+                    { default(DateTime), new TestActorClasses.UserDefinedClass() { A = 888 } },
+                };
+
+            // signals
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.Void());
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.VoidAsync());
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.Value(333));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.ValueAsync(888));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.NullableValue(333));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.NullableValueAsync(888));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.NullableValue(null));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.NullableValueAsync(null));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.ComplexType(complexObject));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.ComplexTypeAsync(complexObject));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.ComplexType(null));
+            ctx.SignalActor<TestActorClasses.IProxyTest>(proxytest, a => a.ComplexTypeAsync(null));
+
+            // calls
+            await ctx.CallActorAsync<TestActorClasses.IProxyTest>(proxytest, a => a.Void());
+            await ctx.CallActorAsync<TestActorClasses.IProxyTest>(proxytest, a => a.VoidAsync());
+            var r3 = await ctx.CallActorAsync<TestActorClasses.IProxyTest, int>(proxytest, a => a.Value(333));
+            var r4 = await ctx.CallActorAsync<TestActorClasses.IProxyTest, int>(proxytest, a => a.ValueAsync(888));
+            var r5 = await ctx.CallActorAsync<TestActorClasses.IProxyTest, int?>(proxytest, a => a.NullableValue(333));
+            var r6 = await ctx.CallActorAsync<TestActorClasses.IProxyTest, int?>(proxytest, a => a.NullableValueAsync(888));
+            var r7 = await ctx.CallActorAsync<TestActorClasses.IProxyTest, int?>(proxytest, a => a.NullableValue(null));
+            var r8 = await ctx.CallActorAsync<TestActorClasses.IProxyTest, int?>(proxytest, a => a.NullableValueAsync(null));
+            var r9 = await ctx.CallActorAsync(proxytest, (TestActorClasses.IProxyTest a) => a.ComplexType(complexObject));
+            var r10 = await ctx.CallActorAsync(proxytest, (TestActorClasses.IProxyTest a) => a.ComplexTypeAsync(complexObject));
+            var r11 = await ctx.CallActorAsync(proxytest, (TestActorClasses.IProxyTest a) => a.ComplexType(null));
+            var r12 = await ctx.CallActorAsync(proxytest, (TestActorClasses.IProxyTest a) => a.ComplexTypeAsync(null));
+
+            if (r3 != 333 || r4 != 888 || r5 != 333 || r6 != 888 || r7 != null || r8 != null || r9 == null || r10 == null || r11 != null || r12 != null)
+            {
+                return "some results are wrong";
+            }
+
+            return "ok";
+        }
     }
 }

@@ -4,6 +4,26 @@
         <name>Microsoft.Azure.WebJobs.Extensions.DurableTask</name>
     </assembly>
     <members>
+        <member name="T:Microsoft.Azure.WebJobs.Actor">
+            <summary>
+            Statically accessible context for actor operations.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Actor.Context">
+            <summary>
+            The context of the currently executing actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Actor.Key">
+            <summary>
+            The key of the currently executing actor.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.Actor.Self">
+            <summary>
+            The actor reference for the currently executing actor.
+            </summary>
+        </member>
         <member name="T:Microsoft.Azure.WebJobs.ActorCurrentOperationStatus">
             <summary>
             Information about the current status of an operation executing on an actor.
@@ -174,6 +194,12 @@
         <member name="P:Microsoft.Azure.WebJobs.Extensions.DurableTask.SchedulerState.LockedBy">
             <summary>
             The instance id of the orchestration that currently holds the lock of this actor.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedInvocationInfo">
+            <summary>
+            A class encapsulating functionality for capturing, transmitting, and executing typed invocations
+            on actors using CLR reflection on the runtime object representing the actor.
             </summary>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.Extensions.DurableTask.TypedStateView`1">
@@ -1085,6 +1111,100 @@
             <summary>
             The exception that is thrown when application code violates the locking rules.
             </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.TypedInvocationExtensions">
+            <summary>
+            Extends the client and actor contexts to support typed object-style invocations using CLR interfaces.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.TypedInvocationExtensions.SignalActor``1(Microsoft.Azure.WebJobs.IDurableOrchestrationClient,Microsoft.Azure.WebJobs.ActorId,System.Action{``0},System.String,System.String)">
+            <summary>
+            Signals an actor to perform an operation.
+            </summary>
+            <typeparam name="T">The actor interface for this operation.</typeparam>
+            <param name="client">The client.</param>
+            <param name="actorId">The target actor.</param>
+            <param name="invocation">The actor invocation.</param>
+            <param name="taskHubName">The TaskHubName of the target actor.</param>
+            <param name="connectionName">The name of the connection string associated with <paramref name="taskHubName"/>.</param>
+            <returns>A task that completes when the message has been reliably enqueued.</returns>
+            <remarks>
+            All method arguments are serialized with <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>. User-defined
+            types must thus be marked as serializable.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.TypedInvocationExtensions.SignalActor``1(Microsoft.Azure.WebJobs.IDeterministicExecutionContext,Microsoft.Azure.WebJobs.ActorId,System.Action{``0})">
+            <summary>
+            Sends a signal to an actor to perform an operation. Does not wait for a response, result, or exception.
+            </summary>
+            <typeparam name="T">The actor interface for this operation.</typeparam>
+            <param name="context">The context.</param>
+            <param name="actor">The target actor.</param>
+            <param name="invocation">The actor invocation.</param>
+            <remarks>
+            All method arguments are serialized with <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>. User-defined
+            types must thus be marked as serializable.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.TypedInvocationExtensions.CallActorAsync``1(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.Action{``0})">
+            <summary>
+            Calls an operation on an actor, passing an argument, and returns the result asynchronously.
+            </summary>
+            <typeparam name="T">The actor interface for this operation.</typeparam>
+            <param name="context">The context.</param>
+            <param name="actorId">The target actor.</param>
+            <param name="invocation">The invocation.</param>
+            <returns>A task representing the completion of the operation on the actor.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+            <remarks>
+            All method arguments are serialized with <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>. User-defined
+            types must thus be marked as serializable.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.TypedInvocationExtensions.CallActorAsync``2(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.Func{``0,``1})">
+            <summary>
+            Calls an operation on an actor, passing an argument, and returns the result asynchronously.
+            </summary>
+            <typeparam name="TActorInterface">The actor interface for this operation.</typeparam>
+            <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
+            <param name="context">The context.</param>
+            <param name="actorId">The target actor.</param>
+            <param name="invocation">The invocation.</param>
+            <returns>A task representing the result of the operation.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+            <remarks>
+            All method arguments are serialized with <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>. User-defined
+            types must thus be marked as serializable.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.TypedInvocationExtensions.CallActorAsync``2(Microsoft.Azure.WebJobs.IInterleavingContext,Microsoft.Azure.WebJobs.ActorId,System.Func{``0,System.Threading.Tasks.Task{``1}})">
+            <summary>
+            Calls an operation on an actor, passing an argument, and returns the result asynchronously.
+            </summary>
+            <typeparam name="TActorInterface">The actor interface for this operation.</typeparam>
+            <typeparam name="TResult">The JSON-serializable result type of the operation.</typeparam>
+            <param name="context">The context.</param>
+            <param name="actorId">The target actor.</param>
+            <param name="invocation">The invocation.</param>
+            <returns>A task representing the result of the operation.</returns>
+            <exception cref="T:Microsoft.Azure.WebJobs.LockingRulesViolationException">if the context already holds some locks, but not the one for <paramref name="actorId"/>.</exception>
+            <remarks>
+            All method arguments are serialized with <see cref="T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>. User-defined
+            types must thus be marked as serializable.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.TypedInvocationExtensions.Dispatch``1(Microsoft.Azure.WebJobs.IDurableActorContext)">
+            <summary>
+            Dynamically dispatches the incoming actor operation using reflection.
+            </summary>
+            <typeparam name="T">The class to use for actor instances.</typeparam>
+            <returns>A task that completes when the dispatched operation has finished.</returns>
+            <remarks>
+            If the actor's state is null, an object of type <typeparamref name="T"/> is created first. Then, reflection
+            is used to try to find a matching method. This match is based on the method name
+            (which is the operation name) and the argument list (which is the operation content, deserialized into
+            an object array).
+            </remarks>
         </member>
         <member name="T:Microsoft.Azure.WebJobs.DurableContextExtensions">
             <summary>
